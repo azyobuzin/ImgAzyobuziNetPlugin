@@ -10,6 +10,7 @@ using System.Xml;
 using System.Xml.Linq;
 using Acuerdo.Plugin;
 using Inscribe.Plugin;
+using Inscribe.Storage;
 
 namespace ImgAzyobuziNetPlugin
 {
@@ -36,25 +37,41 @@ namespace ImgAzyobuziNetPlugin
         public void Loaded()
         {
             UploaderManager.RegisterResolver(new Resolver());
-
-            Task.Factory.StartNew(() =>
-            {
-                using (var wc = new WebClient())
-                using (var reader = JsonReaderWriterFactory.CreateJsonReader(
-                    wc.OpenRead("http://img.azyobuzi.net/api/regex.json"),
-                    XmlDictionaryReaderQuotas.Max))
-                {
-                    Resolver.RegexList.AddRange(
-                        XElement.Load(reader).Elements()
-                            .Select(xe => new Regex(xe.Element("regex").Value, RegexOptions.IgnoreCase))
-                    );
-                }
-            });
+            LoadRegex();
         }
 
         public IConfigurator ConfigurationInterface
         {
             get { return null; }
+        }
+
+        public static void LoadRegex()
+        {
+            Task.Factory.StartNew(() =>
+            {
+                try
+                {
+                    using (var wc = new WebClient())
+                    using (var reader = JsonReaderWriterFactory.CreateJsonReader(
+                        wc.OpenRead("http://img.azyobuzi.net/api/regex.json"),
+                        XmlDictionaryReaderQuotas.Max))
+                    {
+                        Resolver.RegexList.AddRange(
+                            XElement.Load(reader).Elements()
+                                .Select(xe => new Regex(xe.Element("regex").Value, RegexOptions.IgnoreCase))
+                        );
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ExceptionStorage.Register(
+                        ex,
+                        ExceptionCategory.PluginError,
+                        "img.azyobuzi.net の正規表現の読み込みに失敗しました",
+                        LoadRegex
+                    );
+                }
+            });
         }
     }
 }
