@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Acuerdo.External.Uploader;
@@ -8,16 +7,11 @@ namespace ImgAzyobuziNetPlugin
 {
     public class Resolver : IResolver
     {
-        static Resolver()
-        {
-            RegexList = new List<Regex>();
-        }
-
-        public static List<Regex> RegexList { get; private set; }
+        public static Regex[] RegexArray = new Regex[] { };
 
         public bool IsResolvable(string url)
         {
-            return RegexList.Any(r => r.IsMatch(url));
+            return RegexArray.Any(r => r.IsMatch(url));
         }
 
         public string Resolve(string url)

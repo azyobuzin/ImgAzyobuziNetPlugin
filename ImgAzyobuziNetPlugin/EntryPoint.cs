@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using Acuerdo.Plugin;
+using Inscribe.Core;
 using Inscribe.Plugin;
 using Inscribe.Storage;
 
@@ -37,6 +38,7 @@ namespace ImgAzyobuziNetPlugin
         public void Loaded()
         {
             UploaderManager.RegisterResolver(new Resolver());
+            KernelService.AddMenu("[img.azyobuzi.net] 正規表現を再取得", LoadRegex);
             LoadRegex();
         }
 
@@ -51,15 +53,15 @@ namespace ImgAzyobuziNetPlugin
             {
                 try
                 {
+                    using (var notify = NotifyStorage.NotifyManually("img.azyobuzi.net: 正規表現を取得しています..."))
                     using (var wc = new WebClient())
                     using (var reader = JsonReaderWriterFactory.CreateJsonReader(
                         wc.OpenRead("http://img.azyobuzi.net/api/regex.json"),
                         XmlDictionaryReaderQuotas.Max))
                     {
-                        Resolver.RegexList.AddRange(
-                            XElement.Load(reader).Elements()
-                                .Select(xe => new Regex(xe.Element("regex").Value, RegexOptions.IgnoreCase))
-                        );
+                        Resolver.RegexArray = XElement.Load(reader).Elements()
+                            .Select(xe => new Regex(xe.Element("regex").Value, RegexOptions.IgnoreCase))
+                            .ToArray();
                     }
                 }
                 catch (Exception ex)
@@ -67,7 +69,7 @@ namespace ImgAzyobuziNetPlugin
                     ExceptionStorage.Register(
                         ex,
                         ExceptionCategory.PluginError,
-                        "img.azyobuzi.net の正規表現の読み込みに失敗しました",
+                        "img.azyobuzi.net: 正規表現の読み込みに失敗しました。",
                         LoadRegex
                     );
                 }
